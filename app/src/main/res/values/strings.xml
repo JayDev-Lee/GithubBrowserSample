@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">GithubBrowser</string>
+
+    <string name="network_error_title">알림</string>
+    <string name="network_error_message_not_connected">네트워크가 연결되지 않았습니다. 연결 상태 확인 후 다시 시도해주세요.</string>
+    <string name="network_error_message_timeout">서버의 응답이 늦어져 연결에 실패했습니다. 잠시 후 다시 시도해주세요.</string>
+    <string name="network_error_message_internal_server">서버에서 데이터를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.</string>
+    <string name="network_error_message_unknown">예상치 못한 문제가 발생했습니다. 잠시 후 다시 시도해주세요.</string>
+</resources>

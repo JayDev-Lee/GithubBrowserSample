@@ -1,0 +1,4 @@
+include ':remote'
+include ':domain'
+include ':data'
+include ':app'
