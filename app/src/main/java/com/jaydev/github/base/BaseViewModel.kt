@@ -3,34 +3,99 @@ package com.jaydev.github.base
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.jaydev.github.domain.NetResult
 import com.jaydev.github.domain.entity.NetError
-import com.jaydev.github.model.PopupMessage
-import kotlinx.coroutines.flow.*
+import com.jaydev.github.model.AlertUIModel
+import com.orhanobut.logger.Logger
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
+
+typealias InvokableAction = () -> Unit
 
 abstract class BaseViewModel : ViewModel() {
+    private val loadingProgress = ContentLoadingProgress(viewModelScope)
+
     private val _loading = MutableLiveData<Boolean>()
     val loading: LiveData<Boolean> = _loading
 
-    private val _showToast = MutableLiveData<String>()
-    val showToast: LiveData<String> = _showToast
+    private val _showToast = MutableSharedFlow<String>()
+    val showToast = _showToast.asSharedFlow()
 
-    private val _showAlertDialog = MutableLiveData<PopupMessage>()
-    val showAlertDialog: LiveData<PopupMessage> = _showAlertDialog
+    private val _showAlertDialog = MutableSharedFlow<AlertUIModel.Dialog>()
+    val showAlertDialog = _showAlertDialog.asSharedFlow()
 
-    private val _showRetryDialog = MutableLiveData<Retry>()
-    val showRetryDialog: LiveData<Retry> = _showRetryDialog
+    private val _showActionDialog = MutableSharedFlow<Pair<AlertUIModel.Dialog, InvokableAction>>()
+    val showActionDialog = _showActionDialog.asSharedFlow()
+
+    private val _navigateToBack = MutableSharedFlow<Unit>()
+    val navigateToBack = _navigateToBack.asSharedFlow()
+
+    private val _showSnackbar = MutableSharedFlow<AlertUIModel.Snackbar>()
+    val showSnackbar = _showSnackbar.asSharedFlow()
+
+    protected fun navigateToBack() {
+        viewModelScope.launch {
+            _navigateToBack.emit(Unit)
+        }
+    }
+
+    protected fun showAlert(alert: AlertUIModel, action: InvokableAction? = null) {
+        when (alert) {
+            is AlertUIModel.Dialog -> {
+                if (action != null) showActionDialog(alert, action)
+                else showAlertDialog(alert)
+            }
+
+            is AlertUIModel.Snackbar -> {
+                showSnackbar(alert)
+            }
+
+            is AlertUIModel.Toast -> {
+                showToast(alert.message)
+            }
+        }
+    }
 
     protected fun showToast(message: String) {
-        _showToast.value = message
+        viewModelScope.launch {
+            _showToast.emit(message)
+        }
     }
 
-    protected fun showAlertDialog(title: String, message: String) {
-        _showAlertDialog.value = PopupMessage(title, message)
+    protected fun showActionDialog(alertDialog: AlertUIModel.Dialog, action: InvokableAction) {
+        viewModelScope.launch {
+            _showActionDialog.emit(Pair(alertDialog, action))
+        }
     }
 
-    protected fun showAlertDialog(popup: PopupMessage) {
-        _showAlertDialog.value = popup
+    protected fun showAlertDialog(alertDialog: AlertUIModel.Dialog) {
+        viewModelScope.launch {
+            _showAlertDialog.emit(alertDialog)
+        }
+    }
+
+    protected fun showAlertDialog(title: String, message: CharSequence) {
+        viewModelScope.launch {
+            _showAlertDialog.emit(AlertUIModel.Dialog(title, message))
+        }
+    }
+
+    protected fun showSnackbar(snackbar: AlertUIModel.Snackbar) {
+        viewModelScope.launch {
+            _showSnackbar.emit(snackbar)
+        }
+    }
+
+    fun progress(isLoading: Boolean) {
+        _loading.value = isLoading
     }
 
     protected fun <T> Flow<NetResult<T>>.onSuccess(
@@ -42,44 +107,77 @@ abstract class BaseViewModel : ViewModel() {
     protected fun <T> Flow<NetResult<T>>.onFailure(
         failure: (suspend (NetError.BadRequest) -> Unit)? = null
     ) = onEach {
-        if (it is NetResult.Error && it.error is NetError.BadRequest)
+        if (it is NetResult.Error && it.error is NetError.BadRequest) {
             failure?.invoke(it.error as NetError.BadRequest)
+        }
     }
 
     protected fun <T> Flow<NetResult<T>>.commonErrorHandler(
-        retryAction: RetryInvokable? = null
+        action: InvokableAction = this@BaseViewModel::navigateToBack
     ) = onEach {
-        handleError(it, retryAction)
+        handleError(it, action)
     }
 
-    protected suspend fun <T> Flow<NetResult<T>>.call() = collect()
-
-    protected suspend fun <T> Flow<NetResult<T>>.load(
-        loading: ((Boolean) -> Unit)? = null
-    ) = onStart {
-        if (loading != null) loading.invoke(true) else _loading.value = true
-    }.onCompletion {
-        if (loading != null) loading.invoke(false) else _loading.value = false
-    }.collect()
-
-    private fun handleError(result: NetResult<*>, action: RetryInvokable?) {
+    private fun handleError(result: NetResult<*>, action: InvokableAction) {
         if (result !is NetResult.Error) return
+        viewModelScope.launch {
+            when (result.error) {
+                NetError.Network -> {
+                    val title = "네트워크 에러"
+                    val message = "인터넷 연결 안됨."
 
-        when (result.error) {
-            NetError.Network -> _showToast.value = "네트워크 연결 실패"
-            is NetError.InternalServer -> {
+                    _showActionDialog.emit(Pair(AlertUIModel.Dialog(title, message), action))
+                }
 
-                _showRetryDialog.value =
-                    Retry(action, PopupMessage("서버 에러 ", "서버에서 에러 났다."))
-            }
-            is NetError.Timeout -> {
-                _showRetryDialog.value =
-                    Retry(action, PopupMessage("타임아웃 에러", "연결이 지연 됐다."))
-            }
-            is NetError.Unknown -> {
-                _showAlertDialog.value =
-                    PopupMessage("알수 없는 에러", "알 수 없는 에러가 발생했다.\n예를 들어 파싱에러 같은 거지.")
+                is NetError.InternalServer -> {
+                    val (errorCode, errorMessage) = result.error as NetError.InternalServer
+
+                    val title = "네트워크 에러"
+                    val message = "서버 에러\n" +
+                            "code: $errorCode\n" +
+                            "message: $errorMessage"
+                    _showActionDialog.emit(Pair(AlertUIModel.Dialog(title, message), action))
+                }
+
+                is NetError.Timeout -> {
+                    val title = "네트워크 에러"
+                    val message = "타임 아웃."
+                    _showActionDialog.emit(Pair(AlertUIModel.Dialog(title, message), action))
+                }
+
+                is NetError.Unknown -> {
+                    val title = "네트워크 에러"
+                    val message = "알 수 없는 에러."
+                    _showAlertDialog.emit(AlertUIModel.Dialog(title, message))
+
+                    val throwable = (result.error as NetError.Unknown).throwable
+                    Logger.e(throwable, "Unknown Error")
+                }
+
+                is NetError.BadRequest -> {
+                    // no-op
+                }
             }
         }
     }
+
+    protected suspend fun <T> Flow<NetResult<T>>.call() = cancellable().collect()
+
+    protected suspend fun <T> Flow<NetResult<T>>.load(
+        loading: (Boolean) -> Unit
+    ) = onStart {
+        loading.invoke(true)
+    }.onCompletion {
+        loading.invoke(false)
+    }.cancellable()
+        .collect()
+
+    protected suspend fun <T> Flow<NetResult<T>>.load(
+        loadingLiveData: MutableLiveData<Boolean> = _loading
+    ) = onStart {
+        loadingProgress.handleContentLoading(loadingLiveData, true)
+    }.onCompletion {
+        loadingProgress.handleContentLoading(loadingLiveData, false)
+    }.cancellable()
+        .collect()
 }

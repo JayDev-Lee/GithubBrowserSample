@@ -8,8 +8,9 @@ import com.jaydev.github.domain.interactor.ErrorHandler
 import com.jaydev.github.domain.repository.GithubRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.zip
+import javax.inject.Inject
 
-class GetUserDataUseCase(
+class GetUserDataUseCase @Inject constructor(
     private val githubRepository: GithubRepository,
     private val errorHandler: ErrorHandler
 ) : BaseUseCase<Flow<NetResult<Pair<User, List<Repo>>>>, GetUserDataUseCase.Params>() {
@@ -23,7 +24,7 @@ class GetUserDataUseCase(
     )
 }
 
-class GetRepoDetailUseCase(
+class GetRepoDetailUseCase @Inject constructor(
     private val githubRepository: GithubRepository,
     private val errorHandler: ErrorHandler
 ) : BaseUseCase<Flow<NetResult<Pair<Repo, List<Fork>>>>, GetRepoDetailUseCase.Params>() {

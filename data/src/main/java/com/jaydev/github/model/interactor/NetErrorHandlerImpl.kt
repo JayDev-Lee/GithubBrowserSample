@@ -3,6 +3,7 @@ package com.jaydev.github.model.interactor
 import com.jaydev.github.domain.entity.NetError
 import com.jaydev.github.domain.interactor.ErrorHandler
 import com.jaydev.github.domain.interactor.NetworkConnectException
+import kotlinx.serialization.Serializable
 import retrofit2.HttpException
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -15,30 +16,54 @@ class NetErrorHandlerImpl(private val retrofit: Retrofit) : ErrorHandler {
             is SocketTimeoutException -> NetError.Timeout
             is HttpException -> {
                 when (cause.code()) {
-                    in 500..599 -> NetError.InternalServer
+                    in 500..599 -> {
+                        val response = cause.response()
+                        val (code, message) = extractErrorMessage(response)
+                        NetError.InternalServer(code, message)
+                    }
+
                     in 400..499 -> {
-                        val code = cause.code()
-                        val message = extractErrorMessage(cause.response())
+                        val response = cause.response()
+                        val (code, message) = extractErrorMessage(response)
                         NetError.BadRequest(code, message)
                     }
+
                     else -> NetError.Unknown(cause)
                 }
             }
+
             is NetworkConnectException, is IOException -> NetError.Network
             else -> NetError.Unknown(cause)
         }
     }
 
-    private fun extractErrorMessage(response: Response<*>?): String {
-        val converter = retrofit.responseBodyConverter<ErrorResponse>(
-            ErrorResponse::class.java,
-            arrayOfNulls(0)
-        )
-        val baseResponse = converter.convert(response?.errorBody()!!)
-        return baseResponse?.message.orEmpty()
+    private fun extractErrorMessage(response: Response<*>?): ErrorResponse {
+        return try {
+            val converter = retrofit.responseBodyConverter<ErrorResponse>(
+                ErrorResponse::class.java,
+                arrayOfNulls(0)
+            )
+            val netResponse = converter.convert(response?.errorBody()!!)
+            return ErrorResponse(
+                response.code(),
+                netResponse?.message ?: response.errorBody()?.string().orEmpty(),
+                netResponse?.documentation_url.orEmpty()
+            )
+        } catch (e: Exception) {
+            ErrorResponse(
+                response?.code()!!,
+                response.errorBody()?.string().orEmpty(),
+                ""
+            )
+        }
     }
 
-    private data class ErrorResponse(val message: String, val documentation_url: String)
+    @Serializable
+    private data class ErrorResponse(
+        val code: Int,
+        val message: String,
+        val documentation_url: String
+    )
 }
 
 

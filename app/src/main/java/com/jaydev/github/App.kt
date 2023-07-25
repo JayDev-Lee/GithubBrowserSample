@@ -1,17 +1,26 @@
 package com.jaydev.github
 
 import android.app.Application
-import com.jaydev.github.di.appModule
-import org.koin.android.ext.koin.androidContext
-import org.koin.core.context.startKoin
+import com.orhanobut.logger.AndroidLogAdapter
+import com.orhanobut.logger.Logger
+import com.orhanobut.logger.PrettyFormatStrategy
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        startKoin {
-            androidContext(this@App)
-            modules(appModule)
-        }
+        initLogger()
+    }
+
+    private fun initLogger() {
+        PrettyFormatStrategy.newBuilder()
+            .tag("JayDev")
+            .build()
+            .let { AndroidLogAdapter(it) }
+            .also {
+                Logger.addLogAdapter(it)
+            }
     }
 }

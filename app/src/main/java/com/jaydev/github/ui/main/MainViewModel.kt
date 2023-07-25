@@ -2,21 +2,24 @@ package com.jaydev.github.ui.main
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.jaydev.github.base.BaseViewModel
 import com.jaydev.github.domain.entity.Repo
 import com.jaydev.github.domain.entity.User
 import com.jaydev.github.domain.interactor.usecase.GetUserDataUseCase
+import com.jaydev.github.model.AlertUIModel
 import com.jaydev.github.model.MainListItem
-import com.jaydev.github.model.PopupMessage
 import com.jaydev.github.model.RepoData
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class MainViewModel(
-    userName: String,
+@HiltViewModel
+class MainViewModel @Inject constructor(
+    handle: SavedStateHandle,
     private val getUserData: GetUserDataUseCase
 ) : BaseViewModel() {
-
     private val _title = MutableLiveData<String>()
     val title: LiveData<String> = _title
 
@@ -33,6 +36,8 @@ class MainViewModel(
     val showProgress: LiveData<Boolean> = _showProgress
 
     init {
+        val userName = handle.get<String>("userName") ?: ""
+
         viewModelScope.launch {
             getUserData(GetUserDataUseCase.Params(userName))
                 .onSuccess {
@@ -45,7 +50,7 @@ class MainViewModel(
                     )
                     _refreshListData.value = list
                 }.onFailure {
-                    showAlertDialog(PopupMessage("통신 실패", it.message))
+                    showAlertDialog(AlertUIModel.Dialog("통신 실패", it.message))
                 }.commonErrorHandler()
                 .load { isLoading ->
                     _showProgress.value = isLoading

@@ -6,11 +6,13 @@ import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
 import com.jaydev.github.base.BaseActivity
 import com.jaydev.github.common.KeyboardFocusManager
+import com.jaydev.github.common.clicks
 import com.jaydev.github.databinding.ActivitySearchBinding
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import reactivecircus.flowbinding.android.view.clicks
 
+@AndroidEntryPoint
 class SearchActivity : BaseActivity() {
     private var keyboardFocusManager: KeyboardFocusManager? = null
 

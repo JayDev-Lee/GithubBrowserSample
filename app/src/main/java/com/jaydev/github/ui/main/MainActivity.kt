@@ -3,23 +3,36 @@ package com.jaydev.github.ui.main
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import androidx.activity.viewModels
+import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
+import androidx.lifecycle.DEFAULT_ARGS_KEY
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.MutableCreationExtras
 import com.jaydev.github.base.BaseActivity
 import com.jaydev.github.common.VerticalSpaceItemDecoration
 import com.jaydev.github.databinding.ActivityMainBinding
 import com.jaydev.github.ui.repo.RepoDetailActivity
-import org.koin.androidx.viewmodel.ext.android.getViewModel
-import org.koin.core.parameter.parametersOf
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
+@AndroidEntryPoint
 class MainActivity : BaseActivity() {
+    private val viewModel by viewModels<MainViewModel>(
+        extrasProducer = {
+            val extras = MutableCreationExtras(defaultViewModelCreationExtras)
+            intent?.data?.path?.substring(1)?.let { queryParamId ->
+                extras[DEFAULT_ARGS_KEY] = bundleOf("userName" to queryParamId)
+            }
+            extras
+        }
+    )
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        val viewModel = getViewModel<MainViewModel> {
-            parametersOf(intent.data?.path?.substring(1))
-        }
 
         setupUI(binding)
         subscribeUI(binding, viewModel)
@@ -28,7 +41,7 @@ class MainActivity : BaseActivity() {
     private fun setupUI(binding: ActivityMainBinding) {
         setSupportActionBar(binding.toolbar)
         binding.toolbar.setNavigationOnClickListener {
-            onBackPressed()
+            onBackPressedDispatcher.onBackPressed()
         }
         binding.recyclerView.addItemDecoration(VerticalSpaceItemDecoration(8f))
     }
@@ -54,21 +67,25 @@ class MainActivity : BaseActivity() {
                 RepoDetailActivity.start(this@MainActivity, it.userName, it.repoName)
             }
 
-            showToast.onResult {
+            showToast.onEach {
                 showToast(it)
-            }
+            }.launchIn(lifecycleScope)
 
-            showAlertDialog.onResult {
-                showAlertDialog(it)
-            }
+            showAlertDialog.onEach {
+                showAlertDialog(it.title, it.message)
+            }.launchIn(lifecycleScope)
 
-            showRetryDialog.onResult {
-                showRetryDialog(it)
-            }
+            showActionDialog.onEach {
+                showActionDialog(it.first.title, it.first.message, it.second)
+            }.launchIn(lifecycleScope)
 
             showProgress.onResult {
                 binding.progressLayout.isVisible = it
             }
+
+            navigateToBack.onEach {
+                onBackPressedDispatcher.onBackPressed()
+            }.launchIn(lifecycleScope)
         }
     }
 }
