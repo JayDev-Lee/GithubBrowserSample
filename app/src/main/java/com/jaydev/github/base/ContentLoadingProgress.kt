@@ -1,10 +1,10 @@
 package com.jaydev.github.base
 
-import androidx.lifecycle.MutableLiveData
 import com.jaydev.github.common.cancelIfActive
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 class ContentLoadingProgress(
@@ -23,14 +23,14 @@ class ContentLoadingProgress(
     private var delayedHideJob: Job? = null
     private var delayedShowJob: Job? = null
 
-    fun handleContentLoading(
-        loadingLiveData: MutableLiveData<Boolean>,
+    suspend fun handleContentLoading(
+        loading: MutableStateFlow<Boolean>,
         isLoading: Boolean
     ) {
-        if (isLoading) showProgress(loadingLiveData) else hideProgress(loadingLiveData)
+        if (isLoading) showProgress(loading) else hideProgress(loading)
     }
 
-    fun showProgress(loadingLiveData: MutableLiveData<Boolean>) {
+    suspend fun showProgress(loading: MutableStateFlow<Boolean>) {
         startTime = -1
         loadingDismissed = false
         delayedHideJob?.cancelIfActive()
@@ -42,20 +42,20 @@ class ContentLoadingProgress(
                 postedLoadingShow = false
                 if (!loadingDismissed) {
                     startTime = System.currentTimeMillis()
-                    loadingLiveData.value = true
+                    loading.value = true
                 }
             }
             postedLoadingShow = true
         }
     }
 
-    fun hideProgress(loadingLiveData: MutableLiveData<Boolean>) {
+    suspend fun hideProgress(loading: MutableStateFlow<Boolean>) {
         loadingDismissed = true
         delayedShowJob?.cancelIfActive()
         postedLoadingShow = false
         val diff: Long = System.currentTimeMillis() - startTime
         if (diff >= MIN_LOADING_TIME || startTime == -1L) {
-            loadingLiveData.value = false
+            loading.value = false
         } else {
             if (!postedLoadingHide) {
                 delayedHideJob?.cancelIfActive()
@@ -63,7 +63,7 @@ class ContentLoadingProgress(
                     delay(MIN_LOADING_TIME - diff)
                     postedLoadingHide = false
                     startTime = -1
-                    loadingLiveData.value = false
+                    loading.value = false
                 }
                 postedLoadingHide = true
             }

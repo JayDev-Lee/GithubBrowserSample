@@ -36,13 +36,13 @@ class RepoDetailActivity : BaseActivity() {
 
     private fun subscribeUI(binding: ActivityRepoDetailBinding, viewModel: RepoDetailViewModel) {
         with(viewModel) {
-            title.onResult { binding.toolbar.title = it }
-            repoName.onResult { binding.nameTextView.text = it }
-            starCount.onResult { binding.starCountTextView.text = it }
-            description.onResult { binding.descriptionTextView.text = it }
-            refreshForks.onSafeResult {
+            title.onEach { binding.toolbar.title = it }.launchIn(lifecycleScope)
+            repoName.onEach { binding.nameTextView.text = it }.launchIn(lifecycleScope)
+            starCount.onEach { binding.starCountTextView.text = it }.launchIn(lifecycleScope)
+            description.onEach { binding.descriptionTextView.text = it }.launchIn(lifecycleScope)
+            refreshForks.onEach {
                 (binding.recyclerView.adapter as? RepoDetailAdapter)?.updateList(it)
-            }
+            }.launchIn(lifecycleScope)
 
             showToast.onEach {
                 showToast(it)

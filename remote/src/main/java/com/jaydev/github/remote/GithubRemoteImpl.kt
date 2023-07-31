@@ -13,7 +13,7 @@ class GithubRemoteImpl(
     private val repoEntityMapper: RepoEntityMapper,
     private val forkEntityMapper: ForkEntityMapper
 ) : GithubRemote {
-    override suspend fun getForks(userName: String, id: String) = flow {
+    override fun getForks(userName: String, id: String) = flow {
         emit(
             githubService.getForks(
                 userName = userName,
@@ -26,7 +26,7 @@ class GithubRemoteImpl(
         }
     }
 
-    override suspend fun getRepositories(userName: String) = flow {
+    override fun getRepositories(userName: String) = flow {
         emit(
             githubService.getRepositories(userName)
         )
@@ -36,7 +36,7 @@ class GithubRemoteImpl(
         }
     }
 
-    override suspend fun getRepository(userName: String, id: String) = flow {
+    override fun getRepository(userName: String, id: String) = flow {
         emit(
             githubService.getRepository(
                 userName = userName,
@@ -47,7 +47,7 @@ class GithubRemoteImpl(
         repoEntityMapper.mapFromRemote(it)
     }
 
-    override suspend fun getUser(userName: String) = flow {
+    override fun getUser(userName: String) = flow {
         emit(
             githubService.getUser(userName)
         )

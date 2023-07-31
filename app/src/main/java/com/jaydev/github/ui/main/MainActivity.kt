@@ -48,24 +48,26 @@ class MainActivity : BaseActivity() {
 
     private fun subscribeUI(binding: ActivityMainBinding, viewModel: MainViewModel) {
         with(viewModel) {
-            title.onResult { binding.toolbar.title = it }
+            title.onEach {
+                binding.toolbar.title = it
+            }.launchIn(lifecycleScope)
 
-            refreshListData.onResult {
+            refreshListData.onEach {
                 binding.recyclerView.adapter = MainListAdapter(
                     it,
                     viewModel::onClickUser,
                     viewModel::onClickRepo
                 )
-            }
+            }.launchIn(lifecycleScope)
 
-            navigateProfile.onResult {
+            navigateProfile.onEach {
                 val uri = Uri.parse("githubbrowser://repos/$it")
                 startActivity(Intent(Intent.ACTION_VIEW, uri))
-            }
+            }.launchIn(lifecycleScope)
 
-            navigateRepoDetail.onResult {
+            navigateRepoDetail.onEach {
                 RepoDetailActivity.start(this@MainActivity, it.userName, it.repoName)
-            }
+            }.launchIn(lifecycleScope)
 
             showToast.onEach {
                 showToast(it)
@@ -79,13 +81,14 @@ class MainActivity : BaseActivity() {
                 showActionDialog(it.first.title, it.first.message, it.second)
             }.launchIn(lifecycleScope)
 
-            showProgress.onResult {
+            showProgress.onEach {
                 binding.progressLayout.isVisible = it
-            }
+            }.launchIn(lifecycleScope)
 
             navigateToBack.onEach {
                 onBackPressedDispatcher.onBackPressed()
             }.launchIn(lifecycleScope)
         }
     }
+
 }

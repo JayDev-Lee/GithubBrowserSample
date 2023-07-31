@@ -6,7 +6,6 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.LiveData
 import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_SHORT
 import com.google.android.material.snackbar.Snackbar
 
@@ -20,18 +19,6 @@ open class BaseActivity : AppCompatActivity() {
     private val onBackPressedCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
             finishAfterTransition()
-        }
-    }
-
-    protected fun <T> LiveData<T>.onResult(action: (T) -> Unit) {
-        observe(this@BaseActivity) { data ->
-            action(data)
-        }
-    }
-
-    protected fun <T> LiveData<T?>.onSafeResult(action: (T) -> Unit) {
-        observe(this@BaseActivity) { data ->
-            data?.let(action)
         }
     }
 

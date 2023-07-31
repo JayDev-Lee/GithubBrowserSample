@@ -1,7 +1,5 @@
 package com.jaydev.github.base
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jaydev.github.domain.NetResult
@@ -10,9 +8,11 @@ import com.jaydev.github.model.AlertUIModel
 import com.orhanobut.logger.Logger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
@@ -23,8 +23,8 @@ typealias InvokableAction = () -> Unit
 abstract class BaseViewModel : ViewModel() {
     private val loadingProgress = ContentLoadingProgress(viewModelScope)
 
-    private val _loading = MutableLiveData<Boolean>()
-    val loading: LiveData<Boolean> = _loading
+    private val _loading = MutableStateFlow<Boolean>(false)
+    val loading = _loading.asStateFlow()
 
     private val _showToast = MutableSharedFlow<String>()
     val showToast = _showToast.asSharedFlow()
@@ -161,23 +161,23 @@ abstract class BaseViewModel : ViewModel() {
         }
     }
 
-    protected suspend fun <T> Flow<NetResult<T>>.call() = cancellable().collect()
+    protected fun <T> Flow<NetResult<T>>.call() = cancellable().launchIn(viewModelScope)
 
-    protected suspend fun <T> Flow<NetResult<T>>.load(
+    protected fun <T> Flow<NetResult<T>>.load(
         loading: (Boolean) -> Unit
     ) = onStart {
         loading.invoke(true)
     }.onCompletion {
         loading.invoke(false)
     }.cancellable()
-        .collect()
+        .launchIn(viewModelScope)
 
     protected suspend fun <T> Flow<NetResult<T>>.load(
-        loadingLiveData: MutableLiveData<Boolean> = _loading
+        loadingLiveData: MutableStateFlow<Boolean> = _loading
     ) = onStart {
         loadingProgress.handleContentLoading(loadingLiveData, true)
     }.onCompletion {
         loadingProgress.handleContentLoading(loadingLiveData, false)
     }.cancellable()
-        .collect()
+        .launchIn(viewModelScope)
 }

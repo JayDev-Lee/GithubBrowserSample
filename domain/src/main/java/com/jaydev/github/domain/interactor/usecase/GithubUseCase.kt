@@ -14,7 +14,7 @@ class GetUserDataUseCase @Inject constructor(
     private val githubRepository: GithubRepository,
     private val errorHandler: ErrorHandler
 ) : BaseUseCase<Flow<NetResult<Pair<User, List<Repo>>>>, GetUserDataUseCase.Params>() {
-    override suspend fun run(params: Params) = githubRepository.getUser(params.userName)
+    override fun run(params: Params) = githubRepository.getUser(params.userName)
         .zip(githubRepository.getRepositories(params.userName)) { user, repositories ->
             Pair(user, repositories.sortedByDescending { it.starCount })
         }.toResult(errorHandler)
@@ -28,7 +28,7 @@ class GetRepoDetailUseCase @Inject constructor(
     private val githubRepository: GithubRepository,
     private val errorHandler: ErrorHandler
 ) : BaseUseCase<Flow<NetResult<Pair<Repo, List<Fork>>>>, GetRepoDetailUseCase.Params>() {
-    override suspend fun run(params: Params) =
+    override fun run(params: Params) =
         githubRepository.getRepository(params.userName, params.id)
             .zip(githubRepository.getForks(params.userName, params.id)) { repository, forks ->
                 Pair(repository, forks)
