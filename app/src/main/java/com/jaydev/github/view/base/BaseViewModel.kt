@@ -1,4 +1,4 @@
-package com.jaydev.github.base
+package com.jaydev.github.view.base
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -38,9 +38,6 @@ abstract class BaseViewModel : ViewModel() {
     private val _navigateToBack = MutableSharedFlow<Unit>()
     val navigateToBack = _navigateToBack.asSharedFlow()
 
-    private val _showSnackbar = MutableSharedFlow<AlertUIModel.Snackbar>()
-    val showSnackbar = _showSnackbar.asSharedFlow()
-
     protected fun navigateToBack() {
         viewModelScope.launch {
             _navigateToBack.emit(Unit)
@@ -52,10 +49,6 @@ abstract class BaseViewModel : ViewModel() {
             is AlertUIModel.Dialog -> {
                 if (action != null) showActionDialog(alert, action)
                 else showAlertDialog(alert)
-            }
-
-            is AlertUIModel.Snackbar -> {
-                showSnackbar(alert)
             }
 
             is AlertUIModel.Toast -> {
@@ -85,12 +78,6 @@ abstract class BaseViewModel : ViewModel() {
     protected fun showAlertDialog(title: String, message: CharSequence) {
         viewModelScope.launch {
             _showAlertDialog.emit(AlertUIModel.Dialog(title, message))
-        }
-    }
-
-    protected fun showSnackbar(snackbar: AlertUIModel.Snackbar) {
-        viewModelScope.launch {
-            _showSnackbar.emit(snackbar)
         }
     }
 
@@ -172,12 +159,12 @@ abstract class BaseViewModel : ViewModel() {
     }.cancellable()
         .launchIn(viewModelScope)
 
-    protected suspend fun <T> Flow<NetResult<T>>.load(
-        loadingLiveData: MutableStateFlow<Boolean> = _loading
+    protected fun <T> Flow<NetResult<T>>.load(
+        loading: MutableStateFlow<Boolean> = _loading
     ) = onStart {
-        loadingProgress.handleContentLoading(loadingLiveData, true)
+        loadingProgress.handleContentLoading(loading, true)
     }.onCompletion {
-        loadingProgress.handleContentLoading(loadingLiveData, false)
+        loadingProgress.handleContentLoading(loading, false)
     }.cancellable()
         .launchIn(viewModelScope)
 }

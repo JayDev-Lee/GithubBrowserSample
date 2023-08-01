@@ -1,4 +1,4 @@
-package com.jaydev.github.base
+package com.jaydev.github.view.base
 
 import com.jaydev.github.common.cancelIfActive
 import kotlinx.coroutines.CoroutineScope

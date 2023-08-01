@@ -1,13 +1,12 @@
-package com.jaydev.github.ui.repo
+package com.jaydev.github.view.repo
 
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
-import com.jaydev.github.base.BaseActivity
-import com.jaydev.github.common.VerticalSpaceItemDecoration
-import com.jaydev.github.databinding.ActivityRepoDetailBinding
+import com.jaydev.github.view.base.BaseActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -18,31 +17,15 @@ class RepoDetailActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val binding = ActivityRepoDetailBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        setupUI(binding)
-        subscribeUI(binding, viewModel)
-    }
-
-    private fun setupUI(binding: ActivityRepoDetailBinding) {
-        setSupportActionBar(binding.toolbar)
-        binding.toolbar.setNavigationOnClickListener {
-            onBackPressedDispatcher.onBackPressed()
+        setContent {
+            RepoDetailScreen(viewModel = viewModel)
         }
-        binding.recyclerView.adapter = RepoDetailAdapter()
-        binding.recyclerView.addItemDecoration(VerticalSpaceItemDecoration(8f))
+
+        subscribeUI(viewModel)
     }
 
-    private fun subscribeUI(binding: ActivityRepoDetailBinding, viewModel: RepoDetailViewModel) {
+    private fun subscribeUI(viewModel: RepoDetailViewModel) {
         with(viewModel) {
-            title.onEach { binding.toolbar.title = it }.launchIn(lifecycleScope)
-            repoName.onEach { binding.nameTextView.text = it }.launchIn(lifecycleScope)
-            starCount.onEach { binding.starCountTextView.text = it }.launchIn(lifecycleScope)
-            description.onEach { binding.descriptionTextView.text = it }.launchIn(lifecycleScope)
-            refreshForks.onEach {
-                (binding.recyclerView.adapter as? RepoDetailAdapter)?.updateList(it)
-            }.launchIn(lifecycleScope)
 
             showToast.onEach {
                 showToast(it)

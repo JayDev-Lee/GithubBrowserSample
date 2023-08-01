@@ -14,7 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name="com.jaydev.github.ui.search.SearchActivity"
+            android:name="com.jaydev.github.view.search.SearchActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.jaydev.github.ui.main.MainActivity"
+            android:name="com.jaydev.github.view.result.SearchResultActivity"
             android:exported="true"
             android:windowSoftInputMode="stateAlwaysHidden|adjustResize">
             <intent-filter>
@@ -36,7 +36,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.jaydev.github.ui.repo.RepoDetailActivity"
+            android:name="com.jaydev.github.view.repo.RepoDetailActivity"
             android:exported="false"
             android:windowSoftInputMode="stateAlwaysHidden|adjustResize" />
     </application>

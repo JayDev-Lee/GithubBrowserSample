@@ -1,10 +1,10 @@
-package com.jaydev.github.ui.repo
+package com.jaydev.github.view.repo
 
 import androidx.lifecycle.SavedStateHandle
-import com.jaydev.github.base.BaseViewModel
 import com.jaydev.github.domain.entity.Fork
 import com.jaydev.github.domain.interactor.usecase.GetRepoDetailUseCase
 import com.jaydev.github.model.AlertUIModel
+import com.jaydev.github.view.base.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +13,7 @@ import javax.inject.Inject
 @HiltViewModel
 class RepoDetailViewModel @Inject constructor(
     handle: SavedStateHandle,
-    private val getRepoDetail: GetRepoDetailUseCase
+    getRepoDetail: GetRepoDetailUseCase
 ) : BaseViewModel() {
 
 

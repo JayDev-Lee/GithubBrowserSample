@@ -1,14 +1,14 @@
-package com.jaydev.github.ui.main
+package com.jaydev.github.view.result
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import com.jaydev.github.base.BaseViewModel
 import com.jaydev.github.domain.entity.Repo
 import com.jaydev.github.domain.entity.User
 import com.jaydev.github.domain.interactor.usecase.GetUserDataUseCase
 import com.jaydev.github.model.AlertUIModel
-import com.jaydev.github.model.MainListItem
 import com.jaydev.github.model.RepoData
+import com.jaydev.github.model.SearchListItem
+import com.jaydev.github.view.base.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,14 +18,11 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class MainViewModel @Inject constructor(
+class SearchResultViewModel @Inject constructor(
     handle: SavedStateHandle,
-    private val getUserData: GetUserDataUseCase
+    getUserData: GetUserDataUseCase
 ) : BaseViewModel() {
-    private val _title = MutableStateFlow("")
-    val title = _title.asStateFlow()
-
-    private val _refreshListData = MutableStateFlow<List<MainListItem>>(emptyList())
+    private val _refreshListData = MutableStateFlow<List<SearchListItem>>(emptyList())
     val refreshListData = _refreshListData.asStateFlow()
 
     private val _navigateProfile = MutableSharedFlow<String>()
@@ -34,28 +31,23 @@ class MainViewModel @Inject constructor(
     private val _navigateRepoDetail = MutableSharedFlow<RepoData>()
     val navigateRepoDetail = _navigateRepoDetail.asSharedFlow()
 
-    private val _showProgress = MutableStateFlow(false)
-    val showProgress = _showProgress.asStateFlow()
-
     init {
         val userName = handle.get<String>("userName") ?: ""
 
         getUserData(GetUserDataUseCase.Params(userName))
             .onSuccess {
-                val list = mutableListOf<MainListItem>()
-                list.add(MainListItem.Header(it.first))
+                val list = mutableListOf<SearchListItem>()
+                list.add(SearchListItem.Header(it.first))
                 list.addAll(
                     it.second.map { repo ->
-                        MainListItem.RepoItem(repo)
+                        SearchListItem.RepoItem(repo)
                     }
                 )
                 _refreshListData.value = list
             }.onFailure {
                 showAlertDialog(AlertUIModel.Dialog("통신 실패", it.message))
             }.commonErrorHandler()
-            .load { isLoading ->
-                _showProgress.value = isLoading
-            }
+            .load()
     }
 
 
@@ -65,9 +57,11 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun onClickRepo(user: User, repo: Repo) {
+    fun onClickRepo(repo: Repo) {
         viewModelScope.launch {
-            _navigateRepoDetail.emit(RepoData(user.name, repo.name))
+            val header =
+                refreshListData.value.firstOrNull() as? SearchListItem.Header ?: return@launch
+            _navigateRepoDetail.emit(RepoData(header.user.name, repo.name))
         }
     }
 }

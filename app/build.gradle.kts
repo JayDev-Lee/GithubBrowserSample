@@ -44,7 +44,6 @@ android {
 
     buildFeatures {
         compose = true
-        viewBinding = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.4.3"
@@ -70,10 +69,7 @@ dependencies {
     implementation(libs.material3)
     implementation(libs.navigation.compose)
     implementation(libs.paging.compose)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.recyclerview)
-    implementation(libs.androidx.cardview)
-    implementation(libs.material)
+    implementation(libs.constraintlayout.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
@@ -82,9 +78,8 @@ dependencies {
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
 
-    implementation(libs.androidx.appcompat)
     implementation(libs.lifecycle.viewmodel.ktx)
-    implementation(libs.fragment.ktx)
+    implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.activity.ktx)
 
     implementation(libs.orbit.compose)
