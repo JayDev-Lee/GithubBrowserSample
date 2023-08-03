@@ -1,14 +1,20 @@
 package com.jaydev.github.model
 
-import com.jaydev.github.domain.entity.Repo
-import com.jaydev.github.domain.entity.User
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 
-sealed class SearchListItem {
-    data class Header(val user: User) : SearchListItem() {
-        companion object
-    }
+@Parcelize
+sealed interface SearchListItem : Parcelable {
+    @Parcelize
+    data class Header(
+        val userName: String,
+        val profileImageUrl: String
+    ) : SearchListItem, Parcelable
 
-    data class RepoItem(val repo: Repo) : SearchListItem() {
-        companion object
-    }
+    @Parcelize
+    data class RepoItem(
+        val name: String,
+        val description: String,
+        val starCount: String
+    ) : SearchListItem, Parcelable
 }

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.jaydev.github.view.base.BaseActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -26,22 +27,11 @@ class RepoDetailActivity : BaseActivity() {
 
     private fun subscribeUI(viewModel: RepoDetailViewModel) {
         with(viewModel) {
-
-            showToast.onEach {
-                showToast(it)
-            }.launchIn(lifecycleScope)
-
-            showAlertDialog.onEach {
-                showAlertDialog(it.title, it.message)
-            }.launchIn(lifecycleScope)
-
-            showActionDialog.onEach {
-                showActionDialog(it.first.title, it.first.message, it.second)
-            }.launchIn(lifecycleScope)
-
-            navigateToBack.onEach {
-                onBackPressedDispatcher.onBackPressed()
-            }.launchIn(lifecycleScope)
+            sideEffectFlow
+                .flowWithLifecycle(lifecycle)
+                .onEach {
+                    dispatchBaseSideEffect(it)
+                }.launchIn(lifecycleScope)
         }
     }
 

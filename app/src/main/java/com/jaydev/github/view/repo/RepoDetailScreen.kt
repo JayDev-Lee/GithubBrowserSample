@@ -28,20 +28,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import coil.compose.AsyncImage
-import com.jaydev.github.domain.entity.Fork
+import com.jaydev.github.model.ForkItem
 import com.jaydev.github.ui.theme.GithubBrowserTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun RepoDetailScreen(viewModel: RepoDetailViewModel) {
     GithubBrowserTheme {
+        val state = viewModel.state.collectAsState().value
+
         Scaffold(
             topBar = {
-
-                val title = viewModel.title.collectAsState().value
                 TopAppBar(
                     title = {
-                        Text(text = title)
+                        Text(text = state.title)
                     },
                     colors = TopAppBarDefaults
                         .topAppBarColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -68,7 +68,7 @@ fun RepoDetailScreen(viewModel: RepoDetailViewModel) {
                     val (repoName, description, starCount, forks) = createRefs()
 
                     Text(
-                        text = viewModel.repoName.collectAsState().value,
+                        text = state.repoName,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.constrainAs(repoName) {
                             top.linkTo(parent.top)
@@ -77,7 +77,7 @@ fun RepoDetailScreen(viewModel: RepoDetailViewModel) {
                     )
 
                     Text(
-                        text = viewModel.description.collectAsState().value,
+                        text = state.description,
                         modifier = Modifier.constrainAs(description) {
                             top.linkTo(repoName.bottom, 8.dp)
                             start.linkTo(parent.start)
@@ -85,7 +85,7 @@ fun RepoDetailScreen(viewModel: RepoDetailViewModel) {
                     )
 
                     Text(
-                        text = viewModel.starCount.collectAsState().value,
+                        text = state.starCount,
                         color = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.constrainAs(starCount) {
                             top.linkTo(parent.top)
@@ -93,7 +93,7 @@ fun RepoDetailScreen(viewModel: RepoDetailViewModel) {
                         }
                     )
 
-                    val lists = viewModel.refreshForks.collectAsState().value
+                    val lists = state.forks
                     LazyColumn(
                         modifier = Modifier.constrainAs(forks) {
                             top.linkTo(description.bottom, 8.dp)
@@ -114,7 +114,7 @@ fun RepoDetailScreen(viewModel: RepoDetailViewModel) {
 }
 
 @Composable
-private fun ForkItem(item: Fork) {
+private fun ForkItem(item: ForkItem) {
     ConstraintLayout(modifier = Modifier.padding(16.dp)) {
         val (forkName, userName, profileImage) = createRefs()
 

@@ -14,6 +14,39 @@ open class BaseActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
     }
 
+    protected fun dispatchBaseSideEffect(
+        sideEffect: UiSideEffect,
+        loading: (Boolean) -> Unit = {}
+    ): Boolean {
+        when (sideEffect) {
+            is BaseSideEffect.NavigateToBack -> {
+                onBackPressedDispatcher.onBackPressed()
+            }
+
+            is BaseSideEffect.ShowDialog -> {
+                if (sideEffect.action != null) {
+                    showActionDialog(sideEffect.title, sideEffect.message, sideEffect.action)
+                } else {
+                    showAlertDialog(sideEffect.title, sideEffect.message)
+                }
+            }
+
+            is BaseSideEffect.ShowToast -> {
+                showToast(sideEffect.message)
+            }
+
+            is BaseSideEffect.Loading -> {
+                // to do show loading progress here or composable
+                loading.invoke(sideEffect.isVisible)
+            }
+
+            else -> {
+                return false
+            }
+        }
+        return true
+    }
+
     private val onBackPressedCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
             finishAfterTransition()
@@ -23,7 +56,7 @@ open class BaseActivity : ComponentActivity() {
     protected open fun showActionDialog(
         title: String?,
         message: CharSequence?,
-        action: InvokableAction
+        action: Invokable
     ) {
         AlertDialog.Builder(this)
             .setTitle(title)

@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.core.os.bundleOf
 import androidx.lifecycle.DEFAULT_ARGS_KEY
+import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.MutableCreationExtras
 import com.jaydev.github.view.base.BaseActivity
@@ -38,30 +39,31 @@ class SearchResultActivity : BaseActivity() {
 
     private fun subscribeUI(viewModel: SearchResultViewModel) {
         with(viewModel) {
-            navigateProfile.onEach {
-                val uri = Uri.parse("githubbrowser://repos/$it")
-                startActivity(Intent(Intent.ACTION_VIEW, uri))
-            }.launchIn(lifecycleScope)
+            sideEffectFlow
+                .flowWithLifecycle(lifecycle)
+                .onEach {
+                    val result = dispatchBaseSideEffect(it)
+                    if (!result) {
+                        when (it) {
+                            is SearchResultSideEffect.NavigateToProfile -> {
+                                val uri = Uri.parse("githubbrowser://repos/${it.userName}")
+                                startActivity(Intent(Intent.ACTION_VIEW, uri))
+                            }
 
-            navigateRepoDetail.onEach {
-                RepoDetailActivity.start(this@SearchResultActivity, it.userName, it.repoName)
-            }.launchIn(lifecycleScope)
+                            is SearchResultSideEffect.NavigateToRepoDetail -> {
+                                RepoDetailActivity.start(
+                                    this@SearchResultActivity,
+                                    it.userName,
+                                    it.repoName
+                                )
+                            }
 
-            showToast.onEach {
-                showToast(it)
-            }.launchIn(lifecycleScope)
-
-            showAlertDialog.onEach {
-                showAlertDialog(it.title, it.message)
-            }.launchIn(lifecycleScope)
-
-            showActionDialog.onEach {
-                showActionDialog(it.first.title, it.first.message, it.second)
-            }.launchIn(lifecycleScope)
-
-            navigateToBack.onEach {
-                onBackPressedDispatcher.onBackPressed()
-            }.launchIn(lifecycleScope)
+                            else -> {
+                                // no-op
+                            }
+                        }
+                    }
+                }.launchIn(lifecycleScope)
         }
     }
 

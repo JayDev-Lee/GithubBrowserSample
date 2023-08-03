@@ -1,13 +1,18 @@
 package com.jaydev.github.view.repo
 
 import androidx.lifecycle.SavedStateHandle
-import com.jaydev.github.domain.entity.Fork
 import com.jaydev.github.domain.interactor.usecase.GetRepoDetailUseCase
-import com.jaydev.github.model.AlertUIModel
+import com.jaydev.github.model.ForkItem
+import com.jaydev.github.model.UserItem
+import com.jaydev.github.view.base.BaseSideEffect
 import com.jaydev.github.view.base.BaseViewModel
+import com.jaydev.github.view.base.UiSideEffect
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.syntax.simple.intent
+import org.orbitmvi.orbit.syntax.simple.postSideEffect
+import org.orbitmvi.orbit.syntax.simple.reduce
+import org.orbitmvi.orbit.viewmodel.container
 import javax.inject.Inject
 
 @HiltViewModel
@@ -15,22 +20,15 @@ class RepoDetailViewModel @Inject constructor(
     handle: SavedStateHandle,
     getRepoDetail: GetRepoDetailUseCase
 ) : BaseViewModel() {
+    private val host =
+        object : ContainerHost<RepoDetailState, UiSideEffect> {
+            override val container =
+                container<RepoDetailState, UiSideEffect>(RepoDetailState(), handle)
+        }
 
+    val state = host.container.stateFlow
 
-    private val _title = MutableStateFlow("")
-    val title = _title.asStateFlow()
-
-    private val _description = MutableStateFlow("")
-    val description = _description.asStateFlow()
-
-    private val _starCount = MutableStateFlow("")
-    val starCount = _starCount.asStateFlow()
-
-    private val _repoName = MutableStateFlow("")
-    val repoName = _repoName.asStateFlow()
-
-    private val _refreshForks = MutableStateFlow<List<Fork>>(emptyList())
-    val refreshForks = _refreshForks.asStateFlow()
+    val sideEffectFlow = host.container.sideEffectFlow
 
     init {
         val userName = handle.get<String>("userName") ?: ""
@@ -38,14 +36,29 @@ class RepoDetailViewModel @Inject constructor(
 
         getRepoDetail(GetRepoDetailUseCase.Params(userName, repoName))
             .onSuccess {
-                _title.value = userName
-                _repoName.value = it.first.name
-                _description.value = it.first.description
-                _starCount.value = it.first.starCount
-                _refreshForks.value = it.second
+                host.intent {
+                    reduce {
+                        state.copy(
+                            title = userName,
+                            description = it.first.description,
+                            starCount = it.first.starCount,
+                            repoName = it.first.name,
+                            forks = it.second.map {
+                                val user = it.owner
+                                ForkItem(
+                                    it.name,
+                                    it.fullName,
+                                    UserItem(user.name, user.profileImageUrl)
+                                )
+                            }
+                        )
+                    }
+                }
             }.onFailure {
-                showAlertDialog(AlertUIModel.Dialog("통신 실패", it.message))
-            }.commonErrorHandler()
+                host.intent {
+                    postSideEffect(BaseSideEffect.ShowDialog("Error", it.message))
+                }
+            }.commonErrorHandler(host)
             .call()
     }
 }

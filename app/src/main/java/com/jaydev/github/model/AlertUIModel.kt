@@ -6,7 +6,6 @@ sealed class AlertUIModel {
 		val message: CharSequence,
 		val positiveButton: String? = null,
 		val negativeButton: String? = null,
-		val isButtonRed: Boolean = false
 	) : AlertUIModel()
 
 	data class Toast(

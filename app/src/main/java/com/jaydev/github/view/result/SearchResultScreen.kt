@@ -35,10 +35,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import coil.compose.AsyncImage
-import com.jaydev.github.domain.entity.Repo
-import com.jaydev.github.domain.entity.User
 import com.jaydev.github.model.SearchListItem
 import com.jaydev.github.ui.theme.GithubBrowserTheme
+import com.jaydev.github.view.base.BaseSideEffect
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -54,10 +53,11 @@ fun SearchResultScreen(viewModel: SearchResultViewModel) {
                         .topAppBarColors(containerColor = MaterialTheme.colorScheme.primary)
                 )
             },
-
-            ) { padding ->
-            val lists = viewModel.refreshListData.collectAsState().value
-            val isLoading = viewModel.loading.collectAsState().value
+        ) { padding ->
+            val state = viewModel.state.collectAsState()
+            val sideEffect =
+                viewModel.sideEffectFlow.collectAsState(initial = BaseSideEffect.Loading(false))
+            val isLoading = (sideEffect.value as? BaseSideEffect.Loading)?.isVisible ?: false
 
             Crossfade(targetState = isLoading, label = "loading") {
                 if (it) {
@@ -75,7 +75,7 @@ fun SearchResultScreen(viewModel: SearchResultViewModel) {
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(lists) { item ->
+                        items(state.value.lists) { item ->
                             when (item) {
                                 is SearchListItem.Header -> UserInfoItem(
                                     item,
@@ -98,19 +98,19 @@ fun SearchResultScreen(viewModel: SearchResultViewModel) {
 @Composable
 private fun UserInfoItem(
     item: SearchListItem.Header,
-    onClick: (User) -> Unit
+    onClick: (String) -> Unit
 ) {
     Row(Modifier.clickable {
-        onClick.invoke(item.user)
+        onClick.invoke(item.userName)
     }) {
         AsyncImage(
-            model = item.user.profileImageUrl,
+            model = item.profileImageUrl,
             contentDescription = "User Profile Image",
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
         )
         Spacer(modifier = Modifier.size(20.dp))
-        Text(text = item.user.name)
+        Text(text = item.userName)
     }
 }
 
@@ -118,11 +118,11 @@ private fun UserInfoItem(
 @Composable
 private fun UserRepoItem(
     item: SearchListItem.RepoItem,
-    onClick: (Repo) -> Unit
+    onClick: (String) -> Unit
 ) {
     Card(
         onClick = {
-            onClick.invoke(item.repo)
+            onClick.invoke(item.name)
         },
         modifier = Modifier
             .fillMaxWidth()
@@ -137,7 +137,7 @@ private fun UserRepoItem(
             val (repoName, description, starCount) = createRefs()
 
             Text(
-                text = item.repo.name,
+                text = item.name,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.constrainAs(repoName) {
                     top.linkTo(parent.top)
@@ -146,7 +146,7 @@ private fun UserRepoItem(
             )
 
             Text(
-                text = item.repo.description,
+                text = item.description,
                 modifier = Modifier.constrainAs(description) {
                     top.linkTo(repoName.bottom)
                     start.linkTo(parent.start)
@@ -154,7 +154,7 @@ private fun UserRepoItem(
             )
 
             Text(
-                text = item.repo.starCount,
+                text = item.starCount,
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.constrainAs(starCount) {
                     top.linkTo(parent.top)
