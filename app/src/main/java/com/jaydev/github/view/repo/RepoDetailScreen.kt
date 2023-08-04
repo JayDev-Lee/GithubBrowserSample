@@ -27,13 +27,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.jaydev.github.model.ForkItem
 import com.jaydev.github.ui.theme.GithubBrowserTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun RepoDetailScreen(viewModel: RepoDetailViewModel) {
+fun RepoDetailScreen(viewModel: RepoDetailViewModel = hiltViewModel()) {
     GithubBrowserTheme {
         val state = viewModel.state.collectAsState().value
 

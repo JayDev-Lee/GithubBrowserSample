@@ -3,7 +3,7 @@ package com.jaydev.github.view.base
 sealed interface UiSideEffect
 
 open class BaseSideEffect : UiSideEffect {
-    object NavigateToBack : BaseSideEffect()
+    data class NavigateToBack(val action: Invokable? = null) : BaseSideEffect()
 
     data class Loading(val isVisible: Boolean) : BaseSideEffect()
 

@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.jaydev.github.ui.theme.GithubBrowserTheme
+import com.jaydev.github.view.MainActivity
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -74,8 +75,15 @@ fun SearchScreen() {
                 Button(
                     onClick = {
                         val uri = Uri.parse("githubbrowser://repos/$text")
-                        // TODO navigate to SearchListScreen by using navController
-                        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+
+                        val deepLinkIntent = Intent(
+                            Intent.ACTION_VIEW,
+                            uri,
+                            context,
+                            MainActivity::class.java
+                        )
+
+                        context.startActivity(deepLinkIntent)
                     },
                     modifier = Modifier
                         .fillMaxWidth()

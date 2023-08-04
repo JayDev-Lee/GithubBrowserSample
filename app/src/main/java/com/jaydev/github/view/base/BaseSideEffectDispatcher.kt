@@ -1,25 +1,43 @@
 package com.jaydev.github.view.base
 
 import android.app.AlertDialog
-import android.os.Bundle
-import android.os.PersistableBundle
+import android.content.Context
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.OnBackPressedDispatcher
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.lifecycle.LifecycleOwner
 
-open class BaseActivity : ComponentActivity() {
+val LocalBaseSideEffectDispatcher = staticCompositionLocalOf<BaseSideEffectDispatcher> {
+    error("No SideEffectDispatcher provided")
+}
 
-    override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
-        super.onCreate(savedInstanceState, persistentState)
-        onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
+interface BaseSideEffectDispatcher {
+    @Composable
+    fun dispatchBaseSideEffect(
+        sideEffect: UiSideEffect,
+        loading: @Composable (Boolean) -> Unit
+    ): Boolean
+}
+
+class BaseSideEffectDispatcherImpl(
+    private val context: Context,
+    private val onBackPressedDispatcher: OnBackPressedDispatcher
+) : BaseSideEffectDispatcher {
+
+    fun addBackPressedCallback(owner: LifecycleOwner, callback: OnBackPressedCallback) {
+        onBackPressedDispatcher.addCallback(owner, callback)
     }
 
-    protected fun dispatchBaseSideEffect(
+    @Composable
+    override fun dispatchBaseSideEffect(
         sideEffect: UiSideEffect,
-        loading: (Boolean) -> Unit = {}
+        loading: @Composable (Boolean) -> Unit
     ): Boolean {
         when (sideEffect) {
             is BaseSideEffect.NavigateToBack -> {
+                sideEffect.action?.invoke()
                 onBackPressedDispatcher.onBackPressed()
             }
 
@@ -47,18 +65,12 @@ open class BaseActivity : ComponentActivity() {
         return true
     }
 
-    private val onBackPressedCallback = object : OnBackPressedCallback(true) {
-        override fun handleOnBackPressed() {
-            finishAfterTransition()
-        }
-    }
-
     protected open fun showActionDialog(
         title: String?,
         message: CharSequence?,
         action: Invokable
     ) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(context)
             .setTitle(title)
             .setMessage(message)
             .setPositiveButton(
@@ -70,7 +82,7 @@ open class BaseActivity : ComponentActivity() {
     }
 
     protected open fun showAlertDialog(title: String?, message: CharSequence?) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(context)
             .setTitle(title)
             .setMessage(message)
             .setPositiveButton(
@@ -81,6 +93,6 @@ open class BaseActivity : ComponentActivity() {
     }
 
     protected fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 }

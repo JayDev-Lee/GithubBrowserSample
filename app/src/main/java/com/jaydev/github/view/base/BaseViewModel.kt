@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.jaydev.github.domain.NetResult
 import com.jaydev.github.domain.entity.NetError
 import com.orhanobut.logger.Logger
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onCompletion
@@ -19,8 +21,6 @@ import org.orbitmvi.orbit.syntax.simple.postSideEffect
 typealias Invokable = () -> Unit
 
 abstract class BaseViewModel : ViewModel() {
-    private val loadingProgress = ContentLoadingProgress(viewModelScope)
-
     protected fun <T> Flow<NetResult<T>>.onSuccess(
         success: (suspend (T) -> Unit)? = null
     ) = onEach {
@@ -118,19 +118,25 @@ abstract class BaseViewModel : ViewModel() {
 
     protected fun <T> Flow<NetResult<T>>.load(
         loading: (Boolean) -> Unit
-    ) = onStart {
-        loading.invoke(true)
-    }.onCompletion {
-        loading.invoke(false)
-    }.cancellable()
-        .launchIn(viewModelScope)
+    ): Job {
+        val loadingProgress = ContentLoadingProgress(viewModelScope)
+        return onStart {
+            loadingProgress.handleContentLoading(loading, true)
+        }.onCompletion {
+            loadingProgress.handleContentLoading(loading, false)
+        }.cancellable()
+            .launchIn(viewModelScope)
+    }
 
-//    protected fun <T> Flow<NetResult<T>>.load(
-//        loading: MutableStateFlow<Boolean>
-//    ) = onStart {
-//        loadingProgress.handleContentLoading(loading, true)
-//    }.onCompletion {
-//        loadingProgress.handleContentLoading(loading, false)
-//    }.cancellable()
-//        .launchIn(viewModelScope)
+    protected fun <T> Flow<NetResult<T>>.load(
+        loading: MutableStateFlow<Boolean>
+    ): Job {
+        val loadingProgress = ContentLoadingProgress(viewModelScope)
+        return onStart {
+            loadingProgress.handleContentLoading(loading, true)
+        }.onCompletion {
+            loadingProgress.handleContentLoading(loading, false)
+        }.cancellable()
+            .launchIn(viewModelScope)
+    }
 }

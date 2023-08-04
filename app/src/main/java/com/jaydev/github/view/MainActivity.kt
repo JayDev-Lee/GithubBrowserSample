@@ -1,17 +1,23 @@
 package com.jaydev.github.view
 
 import android.os.Bundle
-import android.os.PersistableBundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.jaydev.github.view.search.SearchScreen
+import androidx.compose.runtime.CompositionLocalProvider
+import com.jaydev.github.view.base.BaseSideEffectDispatcherImpl
+import com.jaydev.github.view.base.LocalBaseSideEffectDispatcher
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
-        super.onCreate(savedInstanceState, persistentState)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val baseSideEffectDispatcher = BaseSideEffectDispatcherImpl(this, onBackPressedDispatcher)
         setContent {
-            SearchScreen()
+            CompositionLocalProvider(LocalBaseSideEffectDispatcher provides baseSideEffectDispatcher) {
+                GitHubBrowserApp()
+            }
         }
     }
 }

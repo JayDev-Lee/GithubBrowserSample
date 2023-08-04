@@ -14,31 +14,18 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name="com.jaydev.github.view.search.SearchActivity"
+            android:name="com.jaydev.github.view.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity
-            android:name="com.jaydev.github.view.result.SearchResultActivity"
-            android:exported="true"
-            android:windowSoftInputMode="stateAlwaysHidden|adjustResize">
             <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-
                 <data
                     android:host="repos"
                     android:scheme="githubbrowser" />
             </intent-filter>
         </activity>
-        <activity
-            android:name="com.jaydev.github.view.repo.RepoDetailActivity"
-            android:exported="false"
-            android:windowSoftInputMode="stateAlwaysHidden|adjustResize" />
     </application>
 
 </manifest>

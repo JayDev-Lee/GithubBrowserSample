@@ -1,5 +1,7 @@
 package com.jaydev.github.view.result
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,17 +33,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.jaydev.github.model.SearchListItem
 import com.jaydev.github.ui.theme.GithubBrowserTheme
+import com.jaydev.github.view.MainActivity
 import com.jaydev.github.view.base.BaseSideEffect
+import com.jaydev.github.view.base.LocalBaseSideEffectDispatcher
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun SearchResultScreen(viewModel: SearchResultViewModel) {
+fun SearchResultScreen(
+    viewModel: SearchResultViewModel = hiltViewModel(),
+    onClickRepoDetail: (userName: String, repoName: String) -> Unit,
+) {
     GithubBrowserTheme {
         Scaffold(
             topBar = {
@@ -54,43 +63,76 @@ fun SearchResultScreen(viewModel: SearchResultViewModel) {
                 )
             },
         ) { padding ->
+            val context = LocalContext.current
+            val sideEffectDispatcher = LocalBaseSideEffectDispatcher.current
+
             val state = viewModel.state.collectAsState()
-            val sideEffect =
-                viewModel.sideEffectFlow.collectAsState(initial = BaseSideEffect.Loading(false))
-            val isLoading = (sideEffect.value as? BaseSideEffect.Loading)?.isVisible ?: false
+            val sideEffect = viewModel.sideEffectFlow.collectAsState(initial = BaseSideEffect())
 
-            Crossfade(targetState = isLoading, label = "loading") {
-                if (it) {
-                    CircularProgressIndicator()
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .padding(padding)
-                            .consumeWindowInsets(padding)
-                            .windowInsetsPadding(
-                                WindowInsets.safeDrawing.only(
-                                    WindowInsetsSides.Horizontal,
-                                ),
-                            )
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(state.value.lists) { item ->
-                            when (item) {
-                                is SearchListItem.Header -> UserInfoItem(
-                                    item,
-                                    viewModel::onClickUser
+            sideEffectDispatcher.dispatchBaseSideEffect(sideEffect.value) { isLoading ->
+                Crossfade(targetState = isLoading, label = "loading") {
+                    if (it) {
+                        CircularProgressIndicator()
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .padding(padding)
+                                .consumeWindowInsets(padding)
+                                .windowInsetsPadding(
+                                    WindowInsets.safeDrawing.only(
+                                        WindowInsetsSides.Horizontal,
+                                    ),
                                 )
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(state.value.lists) { item ->
+                                when (item) {
+                                    is SearchListItem.Header -> UserInfoItem(
+                                        item,
+                                        viewModel::onClickUser
+                                    )
 
-                                is SearchListItem.RepoItem -> UserRepoItem(
-                                    item,
-                                    viewModel::onClickRepo
-                                )
+                                    is SearchListItem.RepoItem -> UserRepoItem(
+                                        item,
+                                        viewModel::onClickRepo
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
+
+            when (sideEffect.value) {
+                is SearchResultSideEffect.NavigateToProfile -> {
+                    val userName =
+                        (sideEffect.value as SearchResultSideEffect.NavigateToProfile).userName
+                    val uri = Uri.parse("githubbrowser://repos/$userName")
+
+                    val deepLinkIntent = Intent(
+                        Intent.ACTION_VIEW,
+                        uri,
+                        context,
+                        MainActivity::class.java
+                    )
+
+                    context.startActivity(deepLinkIntent)
+                }
+
+                is SearchResultSideEffect.NavigateToRepoDetail -> {
+                    val userName =
+                        (sideEffect.value as SearchResultSideEffect.NavigateToRepoDetail).userName
+                    val repoName =
+                        (sideEffect.value as SearchResultSideEffect.NavigateToRepoDetail).repoName
+                    onClickRepoDetail.invoke(userName, repoName)
+                }
+
+                else -> {
+                    // no-op
+                }
+            }
+
         }
     }
 }

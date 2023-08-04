@@ -30,7 +30,18 @@ class ContentLoadingProgress(
         if (isLoading) showProgress(loading) else hideProgress(loading)
     }
 
-    suspend fun showProgress(loading: MutableStateFlow<Boolean>) {
+    suspend fun handleContentLoading(
+        loading: (Boolean) -> Unit,
+        isLoading: Boolean
+    ) {
+        if (isLoading) showProgress(loading) else hideProgress(loading)
+    }
+
+    private suspend fun showProgress(loading: MutableStateFlow<Boolean>) {
+        showProgress { loading.value = it }
+    }
+
+    private suspend fun showProgress(loading: (Boolean) -> Unit) {
         startTime = -1
         loadingDismissed = false
         delayedHideJob?.cancelIfActive()
@@ -42,20 +53,24 @@ class ContentLoadingProgress(
                 postedLoadingShow = false
                 if (!loadingDismissed) {
                     startTime = System.currentTimeMillis()
-                    loading.value = true
+                    loading.invoke(true)
                 }
             }
             postedLoadingShow = true
         }
     }
 
-    suspend fun hideProgress(loading: MutableStateFlow<Boolean>) {
+    private suspend fun hideProgress(loading: MutableStateFlow<Boolean>) {
+        hideProgress { loading.value = it }
+    }
+
+    private suspend fun hideProgress(loading: (Boolean) -> Unit) {
         loadingDismissed = true
         delayedShowJob?.cancelIfActive()
         postedLoadingShow = false
         val diff: Long = System.currentTimeMillis() - startTime
         if (diff >= MIN_LOADING_TIME || startTime == -1L) {
-            loading.value = false
+            // no-op (because, loading progress is never shown)
         } else {
             if (!postedLoadingHide) {
                 delayedHideJob?.cancelIfActive()
@@ -63,7 +78,7 @@ class ContentLoadingProgress(
                     delay(MIN_LOADING_TIME - diff)
                     postedLoadingHide = false
                     startTime = -1
-                    loading.value = false
+                    loading.invoke(false)
                 }
                 postedLoadingHide = true
             }

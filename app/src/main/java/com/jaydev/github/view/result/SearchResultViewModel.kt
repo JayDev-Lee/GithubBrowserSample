@@ -25,13 +25,15 @@ class SearchResultViewModel @Inject constructor(
     private val host =
         object : ContainerHost<SearchResultState, UiSideEffect> {
             override val container =
-                container<SearchResultState, UiSideEffect>(SearchResultState(), handle)
+                container<SearchResultState, UiSideEffect>(SearchResultState(), handle, {
+                    repeatOnSubscribedStopTimeout = 0L
+                })
         }
 
     val state = host.container.stateFlow
 
     val sideEffectFlow =
-        host.container.sideEffectFlow.shareIn(viewModelScope, SharingStarted.WhileSubscribed(), 0)
+        host.container.sideEffectFlow.shareIn(viewModelScope, SharingStarted.WhileSubscribed())
 
     init {
         val userName = handle.get<String>("userName") ?: ""
