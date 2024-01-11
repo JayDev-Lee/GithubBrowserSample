@@ -6,8 +6,8 @@
 
 * 정석적인 Clean Architecture의 구조가 아님을 밝힙니다.
 
-* AAC + MVVM + Clean Architecture 형태를 띄고 있습니다.
-* AAC + Orbit MVI + Clean Architecture 형태를 띄고 있습니다.
+* MVVM 브랜치 -> AAC + XML + MVVM + Clean Architecture 형태를 띄고 있습니다.
+* MVI 브랜치 -> AAC + Compose + Orbit MVI + Clean Architecture 형태를 띄고 있습니다.
 
 * Flow의 메소드 체이닝을 이용한 Retrofit Error Handling을 담고 있습니다.
 
